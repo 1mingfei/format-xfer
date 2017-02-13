@@ -52,6 +52,36 @@ def calc_dist(lst,n1,n2,H):
 
     return np.sqrt(aa**2+bb**2+cc**2)
 
+#def calc_dist_cart(lst,n1,n2,H):
+#    if  (lst[n2][0]-lst[n1][0]>=(0.5*H[0][0])):
+#        a=(lst[n1][0]-lst[n2][0]+H[0][0])**2
+#    elif  lst[n2][0]-lst[n1][0]<(-0.5*H[0][0]):
+#        a=(lst[n1][0]-lst[n2][0]-H[0][0])**2
+#    else:
+#        a=(lst[n1][0]-lst[n2][0])**2
+#
+#    if  lst[n2][1]-lst[n1][1]>=(0.5*H[1][1]):
+#        b=(lst[n1][1]-lst[n2][1]+H[1][1])**2
+#    elif  lst[n2][1]-lst[n1][1]<(-0.5*H[1][1]):
+#        b=(lst[n1][1]-lst[n2][1]-H[1][1])**2
+#    else:
+#        b=(lst[n1][1]-lst[n2][1])**2
+#
+#    if  lst[n2][2]-lst[n1][2]>=0.5*H[2][2]:
+#        c=(lst[n1][2]-lst[n2][2]+H[2][2])**2
+#    elif  lst[n2][2]-lst[n1][2]<(-0.5*H[2][2]):
+#        c=(lst[n1][2]-lst[n2][2]-H[2][2])**2
+#    else:
+#        c=(lst[n1][2]-lst[n2][2])**2
+#    return np.sqrt(a+b+c)
+
+def calc_dist_cart(lst,n1,n2,H):
+    a=(lst[n1][0]-lst[n2][0])**2
+    b=(lst[n1][1]-lst[n2][1])**2
+    c=(lst[n1][2]-lst[n2][2])**2
+    return np.sqrt(a+b+c)
+
+
 #define a function to xfer cartesian to spherial coordinate
 def theta(lst,n1,n2,H): #azimuthal
     if  lst[n2][1]-lst[n1][1]>=0.5:
@@ -227,6 +257,20 @@ class info(object):
                             self.data.append(data_tmp)
                             data_tmp=[]
             self.entry_count=int(col-4)
+            #count numbers for each type
+            count=0
+            atom_type_1=0
+            a=self.data[0][0]
+            for i in range(self.tot_num):
+                if (a==self.data[i][0]) :
+                    count+=1   	
+                elif (a <> self.data[i][0]) :
+                    self.atom_type_num[atom_type_1]=count
+                    a=self.data[i][0]
+                    count=1
+                    atom_type_1+=1
+            self.atom_type_num[atom_type_1]=count
+
 
         elif self.filetype == 'lmp':
             with open(self.filename,'r') as fin:
@@ -361,6 +405,36 @@ class info(object):
                 fout.write(str('Ti  '+str(np.dot(self.data[i,1:4],self.cell[0]))+'   '+str(np.dot(self.data[i,1:4],self.cell[1]))+'   '+str(np.dot(self.data[i,1:4],self.cell[2]))+'   '+str(self.data[i][4])+'   '+str(self.data[i][5])+'   '+str(self.data[i][6])+'\n'))
         return
 
+    def get_xsf_cart(self):
+        ii=str(self.filename.rsplit('.')[0])
+        if os.path.isfile('energy'):
+            energy_in=open('energy','r')
+            lines1=energy_in.readlines()
+            energy=float(line1[ii].split()[0])
+            energy_in.close
+        else:
+            energy=0.00
+        file_out=str(str(ii)+'.xsf')
+        fout=open(file_out,'w')
+        saaa=str('# total energy = '+ str(energy) +' eV\n\n')
+        fout.write(saaa)
+        fout.write('CRYSTAL\nPRIMVEC\n')
+        for i in range(3):
+            fout.write(str(str(self.cell[i][0])+' '+str(self.cell[i][1])+' '+str(self.cell[i][2])+'\n'))
+        fout.write(str('PRIMCOORD\n'+str(self.tot_num)+' 1\n'))
+        if energy==0 :
+            for i in range(int(self.atom_type_num[0])):
+                fout.write('Al  %12.6f  %12.6f  %12.6f\n' %(self.data_cart[i][0],self.data_cart[i][1],self.data_cart[i][2]))
+            for i in range(int(self.atom_type_num[0]),self.tot_num):
+                fout.write('Ti  %12.6f  %12.6f  %12.6f\n' %(self.data_cart[i][0],self.data_cart[i][1],self.data_cart[i][2]))
+        else:
+            for i in range(int(self.atom_type_num[0])):
+                fout.write('Al  %12.6f  %12.6f  %12.6f  %12.6f  %12.6f  %12.6f\n' %(self.data_cart[i][0],self.data_cart[i][1],self.data_cart[i][2],self.data[i][4],self.data[i][2],self.data[i][6]))
+            for i in range(int(self.atom_type_num[0]),self.tot_num):
+                fout.write('Ti  %12.6f  %12.6f  %12.6f  %12.6f  %12.6f  %12.6f\n' %(self.data_cart[i][0],self.data_cart[i][1],self.data_cart[i][2],self.data[i][4],self.data[i][2],self.data[i][6]))
+        return
+
+
     def get_surf(self):
         new_cell_z=self.cell[2][2]+12.0
         for i in range(self.tot_num):
@@ -406,7 +480,10 @@ class info(object):
             num[str(i)]=0
         for i in range(self.tot_num-1):
             for j in range(i+1,self.tot_num):
-                a= calc_dist(self.data,i,j,self.cell)
+                if self.filetype == 'xsf':
+                    a= calc_dist_cart(self.data,i,j,self.cell)
+                else:
+                    a= calc_dist(self.data,i,j,self.cell)
                 if   a < r_cut:
                     binn=int(a/dr)
                     num[str(binn)]+=2
@@ -636,14 +713,113 @@ class info(object):
         plt.close()
         return
 
-    
-    def __init__(self,filename,filetype,atom_type):
+    def get_RDF_a_b(self):
+        dr=0.02
+        r_cut=6.0
+        rho=1.0
+        num={}
+        nb=int(r_cut/dr)
+        for i in range(nb):
+            num[str(i)]=0
+#        print self.atom_type_num[0]
+#        print self.atom_type_num[1]
+        for i in range(int(self.atom_type_num[0])):
+            for j in range(int(self.atom_type_num[0]),self.tot_num):
+#        for i in range(8640):
+#            for j in range(8640,9600):
+                if self.filetype == 'xsf':
+                    a= calc_dist_cart(self.data_cart,i,j,self.cell)
+                else:
+                    a= calc_dist(self.data,i,j,self.cell)
+                if   a < r_cut:
+                    binn=int(a/dr)
+                    num[str(binn)]+=2
+        nm1='rdf_Al_Ti_'+str(self.pass_val)
+        f=open(nm1,'w')
+        for i in range(nb):
+            b=4/3.0*np.pi*((i+1)**3-i**3)*dr**3*rho
+#            b=4*np.pi*(i+1)*dr**2*(i+2)*dr*rho
+            f.write('%12.8f     %12.8f\n'%(i*dr,float(num[str(i)])/float(self.tot_num)/b))
+            #print i*dr,float(num[str(i)])/float(self.tot_num)/b
+        f.close()
+        return
+
+    def mv_center(self,i):
+        center=[0.5,0.5,0.5]
+        center_cart=np.dot(center,self.cell)
+        dist=[self.data[i][1]-center_cart[0],
+                self.data[i][2]-center_cart[1],
+                self.data[i][3]-center_cart[2]]
+        for j in range(self.tot_num):
+            self.data[j][1]-=dist[0]
+            self.data[j][2]-=dist[1]
+            self.data[j][3]-=dist[2]
+        data_tmp=np.zeros((self.tot_num,3))
+        for i in range(self.tot_num):
+            data_tmp[i][0]= self.data[i][1]
+            data_tmp[i][1]= self.data[i][2]
+            data_tmp[i][2]= self.data[i][3]
+        self.data_frac=np.dot(data_tmp,np.linalg.inv(self.cell))
+        print self.data_frac
+        self.wrap_back_frac()
+        self.data_cart=np.dot( self.data_frac, self.cell)
+        return
+ 
+    def wrap_back_frac(self):
+        for i in range(self.tot_num):
+            a=math.floor(self.data_frac[i][0])
+            if a > 1e-10 :
+                self.data_frac[i][0] -= a
+            b=math.floor(self.data_frac[i][1])
+            if b > 1e-10 :
+                self.data_frac[i][1] -= b
+            c=math.floor(self.data_frac[i][2])
+            if c > 1e-10 :
+                self.data_frac[i][2] -= c
+        return
+
+
+    def get_RDF_a_b_center(self):
+        dr=0.02
+        r_cut=6.0
+        rho=1.0
+        num={}
+        nb=int(r_cut/dr)
+        for i in range(nb):
+            num[str(i)]=0
+        for i in range(int(self.atom_type_num[0])):
+            #if ((self.data[i][3]>44.0) and (self.data[i][3]<64.0)):
+            if ((self.data[i][3]>51.0) and (self.data[i][3]<59.0)):
+                self.mv_center(i)
+                self.wrap_back_frac()
+                for j in range(int(self.atom_type_num[0]),int(self.tot_num)):
+                    if self.filetype == 'xsf':
+                        a= calc_dist_cart(self.data_cart,i,j,self.cell)
+                    else:
+                        a= calc_dist(self.data,i,j,self.cell)
+                    if   a < r_cut:
+                        binn=int(a/dr)
+                        num[str(binn)]+=2
+        nm1='rdf_Al_Ti_center_'+str(self.pass_val)
+        f=open(nm1,'w')
+        for i in range(nb):
+            b=4/3.0*np.pi*((i+1)**3-i**3)*dr**3*rho
+#            b=4*np.pi*(i+1)*dr**2*(i+2)*dr*rho
+            f.write('%12.8f     %12.8f\n'%(i*dr,float(num[str(i)])/float(self.tot_num)/b))
+            #print i*dr,float(num[str(i)])/float(self.tot_num)/b
+        f.close()
+        return
+   
+    def __init__(self,filename,filetype,atom_type,pass_val=0):
         self.filename=str(filename)
         self.filetype=filetype
         self.tot_num=0
         self.atom_type=atom_type
+        self.pass_val=pass_val
         self.cell=np.zeros((3,3))
         self.data=[]
+        self.data_cart=[]
+        self.data_frac=[]
         self.entry_count=0  # how many attributes beside atom type and coordinates
         self.atom_type_num=np.zeros(atom_type)
         self.get_data()
@@ -679,5 +855,9 @@ class info(object):
 #    a.get_ADF_all()
 #    a.get_BOP(4,14) # cutoff and order,like Q2 Q4 Q6
 #
-a=info('ab.xsf','xsf',1)
-#    a.BOP_stats()
+for i in range(1):
+    name='out_'+str(i*28000).zfill(6)+'.xsf'
+    a=info(name,'xsf',2,int(i*28000))
+    a.get_RDF_a_b_center() 
+    #a.get_RDF_all()
+
