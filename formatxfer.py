@@ -605,6 +605,15 @@ class info(object):
                 self.data[i][5]=0.0
         return
 
+    def surf_aux(self,yc):
+        for i in range(self.tot_num):
+            if (self.data[i][3])>=yc:
+                self.data[i][4]=0.1
+                self.data[i][5]=0.5
+        return
+
+
+
     def get_BOP(self,r,ll):
         a=str(self.filename.rsplit('.')[0]+'_bop.cfg')
         print a
@@ -891,5 +900,6 @@ class info(object):
 #    #a.get_RDF_all()
 
 a=info('POSCAR.cfg','cfg',1)
-a.ellipse_aux(0.0,0.47,0.28,0.05)
+#a.ellipse_aux(0.0,0.47,0.28,0.05)
+a.surf_aux(0.963)
 a.get_cfg_file('new.cfg')
