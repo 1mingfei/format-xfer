@@ -569,10 +569,41 @@ class info(object):
             print i,num[str(i)]
         return
 
+    def get_cfg_file(self,a):
+        with open(a,'w') as fout:
+            fout.write(str('Number of particles = '+str(self.tot_num)+'\n'))
+            fout.write(str('H0(1,1) = '+str(self.cell[0][0])+' A\n'))
+            fout.write(str('H0(1,2) = '+str(self.cell[0][1])+' A\n'))
+            fout.write(str('H0(1,3) = '+str(self.cell[0][2])+' A\n'))
+            fout.write(str('H0(2,1) = '+str(self.cell[1][0])+' A\n'))
+            fout.write(str('H0(2,2) = '+str(self.cell[1][1])+' A\n'))
+            fout.write(str('H0(2,3) = '+str(self.cell[1][2])+' A\n'))
+            fout.write(str('H0(3,1) = '+str(self.cell[2][0])+' A\n'))
+            fout.write(str('H0(3,2) = '+str(self.cell[2][1])+' A\n'))
+            fout.write(str('H0(3,3) = '+str(self.cell[2][2])+' A\n'))
+            fout.write('.NO_VELOCITY.\n')
+            fout.write('entry_count = %i\n' % int(self.entry_count))
+            #fout.write('auxiliary[0] =  fx [eV/A]\n')
+            #fout.write('auxiliary[1] =  fy [eV/A]\n')
+            #fout.write('auxiliary[2] =  fz [eV/A]\n')
+            for i in range(self.entry_count-3):
+                fout.write('auxiliary[%i] =  %s  \n' % (int(i), str((i))))
+            b=self.data[0][0]
+            fout.write(str(str(b)+'\nAg\n')) 
+            for i in range(self.tot_num):
+                if (self.data[i][0] != b): fout.write(str(str(self.data[i][0])+'\nSi\n'))
+                for j in range(1,1+self.entry_count):
+                    #fout.write(str(str(self.data[i][j])+' '))
+                    fout.write('%+18.10E  '%(self.data[i][j]))
+                fout.write('\n')
+                b=self.data[i][0]
+        return
 
-
-
-
+    def ellipse_aux(self,xc,yc,a,b):
+        for i in range(self.tot_num):
+            if ((self.data[i][1]-xc)**2.0)/(a**2.0)+((self.data[i][2]-yc)**2.0)/(b**2.0)<=1.0:
+                self.data[i][5]=0.0
+        return
 
     def get_BOP(self,r,ll):
         a=str(self.filename.rsplit('.')[0]+'_bop.cfg')
@@ -725,8 +756,6 @@ class info(object):
 #        print self.atom_type_num[1]
         for i in range(int(self.atom_type_num[0])):
             for j in range(int(self.atom_type_num[0]),self.tot_num):
-#        for i in range(8640):
-#            for j in range(8640,9600):
                 if self.filetype == 'xsf':
                     a= calc_dist_cart(self.data_cart,i,j,self.cell)
                 else:
@@ -855,9 +884,12 @@ class info(object):
 #    a.get_ADF_all()
 #    a.get_BOP(4,14) # cutoff and order,like Q2 Q4 Q6
 #
-for i in range(1):
-    name='out_'+str(i*28000).zfill(6)+'.xsf'
-    a=info(name,'xsf',2,int(i*28000))
-    a.get_RDF_a_b_center() 
-    #a.get_RDF_all()
+#for i in range(1):
+#    name='out_'+str(i*28000).zfill(6)+'.xsf'
+#    a=info(name,'xsf',2,int(i*28000))
+#    a.get_RDF_a_b_center() 
+#    #a.get_RDF_all()
 
+a=info('POSCAR.cfg','cfg',1)
+a.ellipse_aux(0.0,0.47,0.28,0.05)
+a.get_cfg_file('new.cfg')
