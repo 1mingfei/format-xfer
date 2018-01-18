@@ -10,6 +10,10 @@ import random as rd
 contact:mingfei@umich.edu
 usage:
     e.g.: a.cfg 2 vasp----------------filename, atomtype number, transfer to
+
+#a.surf_aux(0.963)
+#a.ellipse_aux(0.0,0.47,0.28,0.05,5)
+
 '''
 
 #!!!!!!!!need to be done!!!!!!!!!!!!!!!!
@@ -570,6 +574,8 @@ class info(object):
         return
 
     def get_cfg_file(self,a):
+        print self.data
+        print self.data.shape
         with open(a,'w') as fout:
             fout.write(str('Number of particles = '+str(self.tot_num)+'\n'))
             fout.write(str('H0(1,1) = '+str(self.cell[0][0])+' A\n'))
@@ -589,9 +595,9 @@ class info(object):
             for i in range(self.entry_count-3):
                 fout.write('auxiliary[%i] =  %s  \n' % (int(i), str((i))))
             b=self.data[0][0]
-            fout.write(str(str(b)+'\nAg\n')) 
+            fout.write(str(str(b)+'\nO\n')) 
             for i in range(self.tot_num):
-                if (self.data[i][0] != b): fout.write(str(str(self.data[i][0])+'\nSi\n'))
+                if (self.data[i][0] != b): fout.write(str(str(self.data[i][0])+'\nAg\n'))
                 for j in range(1,1+self.entry_count):
                     #fout.write(str(str(self.data[i][j])+' '))
                     fout.write('%+18.10E  '%(self.data[i][j]))
@@ -599,11 +605,36 @@ class info(object):
                 b=self.data[i][0]
         return
 
-    def ellipse_aux(self,xc,yc,a,b):
+    def get_cart(self):
+        self.pos_cart=np.dot(self.data[:,1:4],self.cell)
+        return self.pos_cart
+
+    def ellipse_aux(self,xc,yc,a,b,aux):
         for i in range(self.tot_num):
-            if ((self.data[i][1]-xc)**2.0)/(a**2.0)+((self.data[i][2]-yc)**2.0)/(b**2.0)<=1.0:
-                self.data[i][5]=0.0
+            if self.data[i][0]<>self.data[0][0]:
+                if ((self.data[i][1]-xc)**2.0)/(a**2.0)+((self.data[i][2]-yc)**2.0)/(b**2.0)<=1.0:
+                    self.data[i][aux]=0.9
         return
+
+    def circle_aux(self,xc,yc,rc,aux):
+        for i in range(self.tot_num):
+            if self.data[i][0]<>self.data[0][0]:
+                if (self.pos_cart[i][0]-xc*self.cell[0][0])**2.0+(self.pos_cart[i][1]-yc*self.cell[1][1])**2.0<=rc**2.0:
+                    self.data[i][aux]=0.9
+        return
+
+    def rand_aux(self,conc,aux): # conc should be percentile
+        typ=1
+        tot=0.0
+        for i in range(int(self.atom_type_num[1])):
+            if self.data[int(self.atom_type_num[0])+i][aux] <> 0.9 and rd.random() < conc:
+                self.data[int(self.atom_type_num[0])+i][aux] = 0.9
+            tot+=self.data[int(self.atom_type_num[0])+i][aux]
+        print tot/self.atom_type_num[1]
+        return
+            
+
+        
 
     def surf_aux(self,yc):
         for i in range(self.tot_num):
@@ -899,7 +930,12 @@ class info(object):
 #    a.get_RDF_a_b_center() 
 #    #a.get_RDF_all()
 
-a=info('POSCAR.cfg','cfg',1)
-#a.ellipse_aux(0.0,0.47,0.28,0.05)
-a.surf_aux(0.963)
+a=info('POSCAR.cfg','cfg',2)
+print a.atom_type_num[0]
+print a.atom_type_num[1]
+a.get_cart()
+a.circle_aux(0.3,0.3,8.,7)
+a.circle_aux(0.1,0.7,20.,7)
+a.circle_aux(0.5,0.5,15.,7)
+a.rand_aux(0.1,7)
 a.get_cfg_file('new.cfg')
