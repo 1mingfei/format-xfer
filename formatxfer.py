@@ -229,7 +229,7 @@ class info(object):
             for i in range(self.tot_num):
                 if (a==self.data[i][0]) :
                     count+=1   	
-                elif (a <> self.data[i][0]) :
+                elif (a != self.data[i][0]) :
                     self.atom_type_num[atom_type_1]=count
                     a=self.data[i][0]
                     count=1
@@ -268,7 +268,7 @@ class info(object):
             for i in range(self.tot_num):
                 if (a==self.data[i][0]) :
                     count+=1   	
-                elif (a <> self.data[i][0]) :
+                elif (a != self.data[i][0]) :
                     self.atom_type_num[atom_type_1]=count
                     a=self.data[i][0]
                     count=1
@@ -301,7 +301,7 @@ class info(object):
             for i in range(self.tot_num):
                 if (a==self.data[i][0]) :
                     count+=1   	
-                elif (a <> self.data[i][0]) :
+                elif (a != self.data[i][0]) :
                     self.atom_type_num[atom_type_1]=count
                     a=self.data[i][0]
                     count=1
@@ -311,9 +311,10 @@ class info(object):
         elif self.filetype == 'vasp' or 'POSCAR':
             with open(self.filename,'r') as fin:
                 lines=fin.readlines()
+            scaler=float(lines[1].split()[0])
             for i in range(3):
                 for j in range(3):
-                    self.cell[i][j]=lines[2+i].split()[j]
+                    self.cell[i][j]=scaler*float(lines[2+i].split()[j])
             lst_a=[int(s) for s in lines[6].split()]
             self.tot_num=int(sum(lst_a))
             for i in range(len(lst_a)):
@@ -354,7 +355,7 @@ class info(object):
 
     def get_POSCAR(self):
         a=str(self.filename.rsplit('.')[0])+'.vasp'
-        print a
+        print(a)
         with open(a,'w') as fout:
             fout.write('transfered\n')
             fout.write('1.0\n')
@@ -367,7 +368,7 @@ class info(object):
         return
     def get_POSCAR_bot(self):
         a=str(self.filename.rsplit('.')[0])+'_SiO2.vasp'
-        print a
+        print(a)
         with open(a,'w') as fout:
             fout.write('transfered\n')
             fout.write('1.0\n')
@@ -494,7 +495,7 @@ class info(object):
         for i in range(nb):
             b=4/3.0*np.pi*((i+1)**3-i**3)*dr**3*rho
 #            b=4*np.pi*(i+1)*dr**2*(i+2)*dr*rho
-            print i*dr,float(num[str(i)])/float(self.tot_num)/b
+            print(i*dr,float(num[str(i)])/float(self.tot_num)/b)
         return
 
     def get_ADF_all(self):
@@ -513,7 +514,7 @@ class info(object):
                                 #num[str(int(np.arccos(get_cos(self.data,j,i,k,self.cell))/np.pi*180))]+=1
                                 num[str(int(np.arccos(get_cos(self.data,k,j,i,self.cell))/np.pi*180))]+=1
         for i in range(0,180,1):
-            print i,num[str(i)]
+            print(i,num[str(i)])
         return
 
     def get_ADF_OOO(self):
@@ -532,7 +533,7 @@ class info(object):
                                 #num[str(int(np.arccos(get_cos(self.data,j,i,k,self.cell))/np.pi*180))]+=1
                                 num[str(int(np.arccos(get_cos(self.data,k,j,i,self.cell))/np.pi*180))]+=1
         for i in range(0,180,1):
-            print i,num[str(i)]
+            print(i,num[str(i)])
         return
 
     def get_ADF_SOS(self):
@@ -551,7 +552,7 @@ class info(object):
                                 #num[str(int(np.arccos(get_cos(self.data,j,i,k,self.cell))/np.pi*180))]+=1
                                 num[str(int(np.arccos(get_cos(self.data,k,j,i,self.cell))/np.pi*180))]+=1
         for i in range(0,180,1):
-            print i,num[str(i)]
+            print(i,num[str(i)])
         return
 
     def get_ADF_OSO(self):
@@ -570,12 +571,12 @@ class info(object):
                                 #num[str(int(np.arccos(get_cos(self.data,j,i,k,self.cell))/np.pi*180))]+=1
                                 num[str(int(np.arccos(get_cos(self.data,k,j,i,self.cell))/np.pi*180))]+=1
         for i in range(0,180,1):
-            print i,num[str(i)]
+            print(i,num[str(i)])
         return
 
     def get_cfg_file(self,a):
-        print self.data
-        print self.data.shape
+        print(self.data)
+        print(self.data.shape)
         with open(a,'w') as fout:
             fout.write(str('Number of particles = '+str(self.tot_num)+'\n'))
             fout.write(str('H0(1,1) = '+str(self.cell[0][0])+' A\n'))
@@ -611,14 +612,14 @@ class info(object):
 
     def ellipse_aux(self,xc,yc,a,b,aux):
         for i in range(self.tot_num):
-            if self.data[i][0]<>self.data[0][0]:
+            if self.data[i][0] != self.data[0][0]:
                 if ((self.data[i][1]-xc)**2.0)/(a**2.0)+((self.data[i][2]-yc)**2.0)/(b**2.0)<=1.0:
                     self.data[i][aux]=0.9
         return
 
     def circle_aux(self,xc,yc,rc,aux):
         for i in range(self.tot_num):
-            if self.data[i][0]<>self.data[0][0]:
+            if self.data[i][0] != self.data[0][0]:
                 if (self.pos_cart[i][0]-xc*self.cell[0][0])**2.0+(self.pos_cart[i][1]-yc*self.cell[1][1])**2.0<=rc**2.0:
                     self.data[i][aux]=0.9
         return
@@ -627,10 +628,10 @@ class info(object):
         typ=1
         tot=0.0
         for i in range(int(self.atom_type_num[1])):
-            if self.data[int(self.atom_type_num[0])+i][aux] <> 0.9 and rd.random() < conc:
+            if self.data[int(self.atom_type_num[0])+i][aux] != 0.9 and rd.random() < conc:
                 self.data[int(self.atom_type_num[0])+i][aux] = 0.9
             tot+=self.data[int(self.atom_type_num[0])+i][aux]
-        print tot/self.atom_type_num[1]
+        print(tot/self.atom_type_num[1])
         return
             
 
@@ -647,7 +648,7 @@ class info(object):
 
     def get_BOP(self,r,ll):
         a=str(self.filename.rsplit('.')[0]+'_bop.cfg')
-        print a
+        print(a)
         Qn=np.zeros((self.tot_num,ll/2))
         for l in range(2,ll+1,2):
             nb_dict={}
@@ -662,7 +663,7 @@ class info(object):
                     total+= Qlm_bar(self.data,j,nb_dict[str(j)],l,i,self.cell)*np.conj(Qlm_bar(self.data,j,nb_dict[str(j)],l,i,self.cell))
                 total*= ((4*np.pi)/(2*l+1))
                 Qn[j][l/2-1]= np.real(np.sqrt(total))
-                print len(nb_dict[str(j)])
+                print(len(nb_dict[str(j)]))
         self.data=np.append(self.data,Qn,axis=1)
         with open(a,'w') as fout:
             fout.write(str('Number of particles = '+str(self.tot_num)+'\n'))
@@ -716,7 +717,7 @@ class info(object):
             st[i][0]=i
             for k in range(self.entry_count-3):
                 st[i][k+1]=ave_pool[k]
-        print st
+        print(st)
         for k in range(self.entry_count-3):
             str1=str(2*(k+1))
             plt.plot(st[:,0],st[:,(k+1)],label=str1)
@@ -745,7 +746,7 @@ class info(object):
             st[i][0]=2*i
             for k in range(self.entry_count-3):
                 st[i][k+1]=ave_pool[k]
-        print st
+        print(st)
         for k in range(self.entry_count-3):
             str1=str(2*(k+1))
             plt.plot(st[:,0],st[:,(k+1)],label=str1)
@@ -774,7 +775,7 @@ class info(object):
             st[i][0]=2*i
             for k in range(self.entry_count-3):
                 st[i][k+1]=ave_pool[k]
-        print st
+        print(st)
         for k in range(self.entry_count-3):
             str1=str(2*(k+1))
             plt.plot(st[:,0],st[:,(k+1)],label=str1)
@@ -792,8 +793,8 @@ class info(object):
         nb=int(r_cut/dr)
         for i in range(nb):
             num[str(i)]=0
-#        print self.atom_type_num[0]
-#        print self.atom_type_num[1]
+#        print(self.atom_type_num[0])
+#        print(self.atom_type_num[1])
         for i in range(int(self.atom_type_num[0])):
             for j in range(int(self.atom_type_num[0]),self.tot_num):
                 if self.filetype == 'xsf':
@@ -809,7 +810,7 @@ class info(object):
             b=4/3.0*np.pi*((i+1)**3-i**3)*dr**3*rho
 #            b=4*np.pi*(i+1)*dr**2*(i+2)*dr*rho
             f.write('%12.8f     %12.8f\n'%(i*dr,float(num[str(i)])/float(self.tot_num)/b))
-            #print i*dr,float(num[str(i)])/float(self.tot_num)/b
+            #print(i*dr,float(num[str(i)])/float(self.tot_num)/b)
         f.close()
         return
 
@@ -829,7 +830,7 @@ class info(object):
             data_tmp[i][1]= self.data[i][2]
             data_tmp[i][2]= self.data[i][3]
         self.data_frac=np.dot(data_tmp,np.linalg.inv(self.cell))
-        print self.data_frac
+        print(self.data_frac)
         self.wrap_back_frac()
         self.data_cart=np.dot( self.data_frac, self.cell)
         return
@@ -875,7 +876,7 @@ class info(object):
             b=4/3.0*np.pi*((i+1)**3-i**3)*dr**3*rho
 #            b=4*np.pi*(i+1)*dr**2*(i+2)*dr*rho
             f.write('%12.8f     %12.8f\n'%(i*dr,float(num[str(i)])/float(self.tot_num)/b))
-            #print i*dr,float(num[str(i)])/float(self.tot_num)/b
+            #print(i*dr,float(num[str(i)])/float(self.tot_num)/b)
         f.close()
         return
    
@@ -913,29 +914,5 @@ class info(object):
 #        a=info(sa,'cfg',na)
 #        a.get_RDF_all()
 #        a.get_BOP(4,4)
-
-
-#    a=info('bulk.cfg','cfg',2)
-#    a.get_lmp('bulk.lmp')
-#    a.get_random()
-#    a.get_surf()
-#    a.get_lmp('surf.lmp')
-
-#    a.get_ADF_all()
-#    a.get_BOP(4,14) # cutoff and order,like Q2 Q4 Q6
-#
-#for i in range(1):
-#    name='out_'+str(i*28000).zfill(6)+'.xsf'
-#    a=info(name,'xsf',2,int(i*28000))
-#    a.get_RDF_a_b_center() 
-#    #a.get_RDF_all()
-
-a=info('POSCAR.cfg','cfg',2)
-print a.atom_type_num[0]
-print a.atom_type_num[1]
-a.get_cart()
-a.circle_aux(0.3,0.3,8.,7)
-a.circle_aux(0.1,0.7,20.,7)
-a.circle_aux(0.5,0.5,15.,7)
-a.rand_aux(0.1,7)
-a.get_cfg_file('new.cfg')
+a=info('CONTCAR','vasp',1)
+a.get_cfg_file('tmp.cfg')
