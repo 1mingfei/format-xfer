@@ -2,6 +2,7 @@
 import os,math,sys
 import linecache
 import numpy as np
+from scipy import special
 import random as rd
 #import scipy.special as sp
 #from matplotlib import pyplot as plt
@@ -143,7 +144,7 @@ def phi(lst,n1,n2,H): #polar
 def Qlm_bar(lst,n1,nbl,l,m,H):   
     total = 0
     for ele in nbl:
-        total+= sp.sph_harm(m,l,phi(lst,n1,ele,H),theta(lst,n1,ele,H))
+        total+= special.sph_harm(m,l,phi(lst,n1,ele,H),theta(lst,n1,ele,H))
     return total/float(len(nbl))
 
 def get_cos(lst,i,j,k,H):
@@ -474,7 +475,6 @@ class info(object):
                 nm+=1
         return
 
-
     def get_RDF_all(self):
         dr=0.02
         r_cut=6.0
@@ -498,6 +498,28 @@ class info(object):
             print(i*dr,float(num[str(i)])/float(self.tot_num)/b)
         return
 
+    def get_RDF_list(self,lst):
+        dr=0.02
+        r_cut=6.0
+        rho=1.0
+        num={}
+        nb=int(r_cut/dr)
+        for i in range(nb):
+            num[str(i)]=0
+        for i in lst:
+            for j in range(i+1,self.tot_num):
+                if self.filetype == 'xsf':
+                    a= calc_dist_cart(self.data,i,j,self.cell)
+                else:
+                    a= calc_dist(self.data,i,j,self.cell)
+                if   a < r_cut:
+                    binn=int(a/dr)
+                    num[str(binn)]+=2
+        for i in range(nb):
+            b=4/3.0*np.pi*((i+1)**3-i**3)*dr**3*rho
+#            b=4*np.pi*(i+1)*dr**2*(i+2)*dr*rho
+            print(i*dr,float(num[str(i)])/float(self.tot_num)/b)
+        return
     def get_ADF_all(self):
         # interval dr of 1 degree
         dr=1.0 # degree
@@ -575,8 +597,8 @@ class info(object):
         return
 
     def get_cfg_file(self,a):
-        print(self.data)
-        print(self.data.shape)
+        #print(self.data)
+        #print(self.data.shape)
         with open(a,'w') as fout:
             fout.write(str('Number of particles = '+str(self.tot_num)+'\n'))
             fout.write(str('H0(1,1) = '+str(self.cell[0][0])+' A\n'))
@@ -596,7 +618,7 @@ class info(object):
             for i in range(self.entry_count-3):
                 fout.write('auxiliary[%i] =  %s  \n' % (int(i), str((i))))
             b=self.data[0][0]
-            fout.write(str(str(b)+'\nO\n')) 
+            fout.write(str(str(b)+'\nW\n')) 
             for i in range(self.tot_num):
                 if (self.data[i][0] != b): fout.write(str(str(self.data[i][0])+'\nAg\n'))
                 for j in range(1,1+self.entry_count):
@@ -633,9 +655,6 @@ class info(object):
             tot+=self.data[int(self.atom_type_num[0])+i][aux]
         print(tot/self.atom_type_num[1])
         return
-            
-
-        
 
     def surf_aux(self,yc):
         for i in range(self.tot_num):
@@ -644,12 +663,10 @@ class info(object):
                 self.data[i][5]=0.5
         return
 
-
-
     def get_BOP(self,r,ll):
         a=str(self.filename.rsplit('.')[0]+'_bop.cfg')
         print(a)
-        Qn=np.zeros((self.tot_num,ll/2))
+        Qn=np.zeros((int(self.tot_num),int(ll/2)))
         for l in range(2,ll+1,2):
             nb_dict={}
             Q=0
@@ -662,7 +679,7 @@ class info(object):
                 for i in range(-l,l+1,1):
                     total+= Qlm_bar(self.data,j,nb_dict[str(j)],l,i,self.cell)*np.conj(Qlm_bar(self.data,j,nb_dict[str(j)],l,i,self.cell))
                 total*= ((4*np.pi)/(2*l+1))
-                Qn[j][l/2-1]= np.real(np.sqrt(total))
+                Qn[j][int(l/2-1)]= np.real(np.sqrt(total))
                 print(len(nb_dict[str(j)]))
         self.data=np.append(self.data,Qn,axis=1)
         with open(a,'w') as fout:
@@ -914,5 +931,3 @@ class info(object):
 #        a=info(sa,'cfg',na)
 #        a.get_RDF_all()
 #        a.get_BOP(4,4)
-a=info('CONTCAR','vasp',1)
-a.get_cfg_file('tmp.cfg')
