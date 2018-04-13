@@ -7,20 +7,52 @@ import random as rd
 #import scipy.special as sp
 #from matplotlib import pyplot as plt
 
-'''transfor format between POSCAR CFG Lammps xsf
-contact:mingfei@umich.edu
-usage:
-    e.g.: a.cfg 2 vasp----------------filename, atomtype number, transfer to
+#-------------------list of features---------------------
+#nb_lst(cell,data,tot_num,i_n,Rc)
+#is_float(s)
+#calc_dist(lst,n1,n2,H)
+#calc_dist_cart(lst,n1,n2,H)
+#theta(lst,n1,n2,H) #azimuthal
+#phi(lst,n1,n2,H) #polar
+#Qlm_bar(lst,n1,nbl,l,m,H) #bond orientational order
+#get_cos(lst,i,j,k,H)
+#Class info():
+#info.get_data(self)
+#info.get_POSCAR(self)
+#info.get_xsf(self)
+#info.get_xsf_cart(self)
+#info.get_surf(self) # what a junk function
+#info.get_random(self) #randomly perturb atomic positions
+#info.get_lmp(self,filename) #output lmp file but you need change masses
+#info.get_RDF_all(self) # as you expected RDF is calculated
+#info.get_RDF_list(self,lst,r_cut=6.0) #calculate RDF for atoms listed in lst
+#info.get_ADF_list(self,lst,r_cut=6.0)
+#info.get_ADF_all(self)
+#info.get_ADF_OOO(self) #ADF for a specific type of bonds A A A
+#info.get_ADF_SOS(self) #ADF for a specific type of bonds A B A
+#info.get_ADF_OSO(self) #ADF for a specific type of bonds B A B
+#info.get_cfg_file(self,a) #output cfg format type file
+#info.get_cart(self) #get cartesian positions
+#info.ellipse_aux(self,xc,yc,a,b,aux) #change cfg file aux to identify a ellipse shape
+#info.circle_aux(self,xc,yc,rc,aux) #change cfg file aux to identify a circle shape
+#info.rand_aux(self,conc,aux) #change cfg file aux conc should be percentile
+#info.surf_aux(self,yc) #change cfg file aux for surface atoms
+#info.get_BOP(self,lst,r,ll) #get bond orientational order for a listed atoms
+#info.BOP_stats(self) #bop statistics
+#info.get_RDF_a_b(self) #get RDF between type A and type b
+#info.mv_center(self,i) # move atom i to the center of the cell
+#info.wrap_back_frac(self) #in fraction positions wrap atoms back to the cell
+#info.get_RDF_a_b_center(self) # totally forgot why I write this function
+#---------------end list of features---------------------
 
-#a.surf_aux(0.963)
-#a.ellipse_aux(0.0,0.47,0.28,0.05,5)
-
-'''
-
-#!!!!!!!!need to be done!!!!!!!!!!!!!!!!
-#format of data should be unified to 
-# atom_type(string) x y z and other atoic attributes(if any) (double_types)
-# by now --------------- xsf ok but coordinates in cartesian not fractional
+def nb_lst(cell,data,tot_num,i_n,Rc):
+    lst=[]
+    for i in range(tot_num):
+        a = calc_dist(data,i_n,i,cell) 
+        if a <= Rc and (a > 0.5) and (i != i_n):
+            lst.append([i,a])
+    lst=np.asarray(lst)
+    return lst
 
 def is_float(s):
     try:
@@ -349,10 +381,7 @@ class info(object):
                 jj+=lst_a[i]
                 num+=1
             self.entry_count=3
-
         return
-
-
 
     def get_POSCAR(self):
         a=str(self.filename.rsplit('.')[0])+'.vasp'
@@ -440,7 +469,6 @@ class info(object):
                 fout.write('Ti  %12.6f  %12.6f  %12.6f  %12.6f  %12.6f  %12.6f\n' %(self.data_cart[i][0],self.data_cart[i][1],self.data_cart[i][2],self.data[i][4],self.data[i][2],self.data[i][6]))
         return
 
-
     def get_surf(self):
         new_cell_z=self.cell[2][2]+12.0
         for i in range(self.tot_num):
@@ -458,7 +486,6 @@ class info(object):
             self.data[i][3]+=a
             if self.data[i][3]> 1.0: self.data[i][3]-=1.0
         return
-
 
     def get_lmp(self,filename):
         with open(filename,'w') as fout:
@@ -498,9 +525,8 @@ class info(object):
             print(i*dr,float(num[str(i)])/float(self.tot_num)/b)
         return
 
-    def get_RDF_list(self,lst):
+    def get_RDF_list(self,lst,r_cut=6.0):
         dr=0.02
-        r_cut=6.0
         rho=1.0
         num={}
         nb=int(r_cut/dr)
@@ -515,11 +541,37 @@ class info(object):
                 if   a < r_cut:
                     binn=int(a/dr)
                     num[str(binn)]+=2
-        for i in range(nb):
-            b=4/3.0*np.pi*((i+1)**3-i**3)*dr**3*rho
-#            b=4*np.pi*(i+1)*dr**2*(i+2)*dr*rho
-            print(i*dr,float(num[str(i)])/float(self.tot_num)/b)
+        with open('rdf_all.dat','w')as fin:
+            for i in range(nb):
+                b=4/3.0*np.pi*((i+1)**3-i**3)*dr**3*rho
+                fin.write("%12.8f  %12.8f\n"%(i*dr,float(num[str(i)])/float(self.tot_num)/b))     
         return
+
+    def get_ADF_list(self,lst,r_cut=6.0):
+        # interval dr of 1 degree
+        dr=1.0 # degree
+        num={}
+        for i in range(0,180,1):
+            num[str(i)]=0
+        #for i in range(self.tot_num-1):
+        for i in lst:
+            i_lst=nb_lst(self.cell,self.data,self.tot_num,i,r_cut)[:,0]
+            print(len(i_lst))
+            print(i_lst)
+            for j in i_lst:
+                j=int(j)
+                for k in i_lst:
+                    k=int(k)
+                    if k!=i and k!= j:
+                        if calc_dist(self.data,k,j,self.cell) < r_cut and calc_dist(self.data,k,i,self.cell) < r_cut :
+                            tmp=(int(np.arccos(get_cos(self.data,k,j,i,self.cell))/np.pi*180))
+                            if tmp==180:tmp=0
+                            num[str(tmp)]+=1
+        with open('adf_all.dat','w')as fin:
+            for i in range(0,180,1):
+                fin.write("%12.8f  %12.8f\n"%(float(i),float(num[str(i)])))
+        return
+
     def get_ADF_all(self):
         # interval dr of 1 degree
         dr=1.0 # degree
@@ -663,14 +715,15 @@ class info(object):
                 self.data[i][5]=0.5
         return
 
-    def get_BOP(self,r,ll):
+    def get_BOP(self,lst,r,ll):
+        #calculate BOP from Q2 ,Q4, Q6 to Qll
         a=str(self.filename.rsplit('.')[0]+'_bop.cfg')
         print(a)
-        Qn=np.zeros((int(self.tot_num),int(ll/2)))
+        Qn=np.zeros((int(len(lst)),int(ll/2)))
         for l in range(2,ll+1,2):
             nb_dict={}
             Q=0
-            for j in range(self.tot_num):
+            for j in lst:
                 total = 0
                 nb_dict[str(j)]=[]
                 for i in range(self.tot_num):
@@ -680,10 +733,10 @@ class info(object):
                     total+= Qlm_bar(self.data,j,nb_dict[str(j)],l,i,self.cell)*np.conj(Qlm_bar(self.data,j,nb_dict[str(j)],l,i,self.cell))
                 total*= ((4*np.pi)/(2*l+1))
                 Qn[j][int(l/2-1)]= np.real(np.sqrt(total))
-                print(len(nb_dict[str(j)]))
-        self.data=np.append(self.data,Qn,axis=1)
+                #print(len(nb_dict[str(j)]))
+        self.data=np.append(self.data[:len(lst)],Qn,axis=1)
         with open(a,'w') as fout:
-            fout.write(str('Number of particles = '+str(self.tot_num)+'\n'))
+            fout.write(str('Number of particles = '+str(len(lst))+'\n'))
             fout.write(str('H0(1,1) = '+str(self.cell[0][0])+' A\n'))
             fout.write(str('H0(1,2) = '+str(self.cell[0][1])+' A\n'))
             fout.write(str('H0(1,3) = '+str(self.cell[0][2])+' A\n'))
@@ -700,19 +753,18 @@ class info(object):
             #fout.write('auxiliary[2] =  fz [eV/A]\n')
             #for i in range(ll/2):
             #    fout.write('auxiliary[%i] =  %s  \n' % (int(3+i), str(2*(i+1))))
-
-            for i in range(ll/2):
+            for i in range(int(ll/2)):
                 fout.write('auxiliary[%i] =  %s  \n' % (int(i), str(2*(i+1))))
             b=self.data[0][0]
-            fout.write(str(str(b)+'\nO\n')) 
-            for i in range(self.tot_num):
+            fout.write(str(str(b)+'\nW\n')) 
+            for i in range(len(lst)):
                 if (self.data[i][0] != b): fout.write(str(str(self.data[i][0])+'\nSi\n'))
-                for j in range(1,1+ll/2+self.entry_count):
+                for j in range(1,1+int(ll/2)+self.entry_count):
                     fout.write(str(str(self.data[i][j])+' '))
                 fout.write('\n')
                 b=self.data[i][0]
-
-        return
+        Qn=np.asarray(Qn)
+        return(Qn)
 
     def BOP_stats(self):
         st=np.zeros((int(self.cell[2][2]),(self.entry_count-2)))
