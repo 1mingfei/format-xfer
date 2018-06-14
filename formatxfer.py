@@ -671,9 +671,9 @@ class info(object):
             for i in range(self.entry_count-3):
                 fout.write('auxiliary[%i] =  %s  \n' % (int(i), str((i))))
             b=self.data[0][0]
-            fout.write(str(str(b)+'\nW\n')) 
+            fout.write(str(str(b)+'\nA1\n')) 
             for i in range(self.tot_num):
-                if (self.data[i][0] != b): fout.write(str(str(self.data[i][0])+'\nAg\n'))
+                if (self.data[i][0] != b): fout.write(str(str(self.data[i][0])+'\nA2\n'))
                 for j in range(1,1+self.entry_count):
                     #fout.write(str(str(self.data[i][j])+' '))
                     fout.write('%+18.10E  '%(self.data[i][j]))
@@ -949,17 +949,29 @@ class info(object):
             #print(i*dr,float(num[str(i)])/float(self.tot_num)/b)
         f.close()
         return
+
     def select_species(self,atomic_masses):
         data=[]
+        atn =[]
         for i in range(len(atomic_masses)):
-            data.append(np.asarray(self.data[self.data[:,0]==atomic_masses[i]]))
+            data.append(self.data[self.data[:,0]==atomic_masses[i]])
         if len(data) == 1:
             dat=np.asarray(data)
+            atn=len(dat)
         else:
             for i in range(1,len(data)):
                 dat=np.vstack((data[0],data[i]))
                 dat=np.asarray(dat)
-        print(dat)
+                atn.append(len(data[i]))
+        #print(np.squeeze(dat).shape)
+        self.data=np.squeeze(dat)
+        self.tot_num=len(self.data)
+        self.atom_type=len(atomic_masses)
+        self.atom_type_num=atn
+        print(self.data[0][0])
+        self.get_cfg_file('new.cfg')
+        return
+    def cut_box(atomic_masses,limits):
         return
 
    
@@ -1003,7 +1015,7 @@ a=info('init.cfg','cfg',3)
 #with open('tmp.dat','w') as fout:
 #    for i in range(int(a.atom_type_num[0]+a.atom_type_num[1]),a.tot_num):
 #        fout.write(str(a.data[i])+'\n')
-#a.select_species([15.99909,107.8682])
-a.select_species([107.8682])
+a.select_species([15.99909,107.8682])
+#a.select_species([107.8682])
 
 
