@@ -43,6 +43,7 @@ import random as rd
 #info.mv_center(self,i) # move atom i to the center of the cell
 #info.wrap_back_frac(self) #in fraction positions wrap atoms back to the cell
 #info.get_RDF_a_b_center(self) # totally forgot why I write this function
+#info.select_species([107.8682,15.9990]) # select specific atomic species
 #---------------end list of features---------------------
 
 def nb_lst(cell,data,tot_num,i_n,Rc):
@@ -948,6 +949,19 @@ class info(object):
             #print(i*dr,float(num[str(i)])/float(self.tot_num)/b)
         f.close()
         return
+    def select_species(self,atomic_masses):
+        data=[]
+        for i in range(len(atomic_masses)):
+            data.append(np.asarray(self.data[self.data[:,0]==atomic_masses[i]]))
+        if len(data) == 1:
+            dat=np.asarray(data)
+        else:
+            for i in range(1,len(data)):
+                dat=np.vstack((data[0],data[i]))
+                dat=np.asarray(dat)
+        print(dat)
+        return
+
    
     def __init__(self,filename,filetype,atom_type,pass_val=0):
         self.filename=str(filename)
@@ -983,3 +997,13 @@ class info(object):
 #        a=info(sa,'cfg',na)
 #        a.get_RDF_all()
 #        a.get_BOP(4,4)
+
+#==========add new feature 06/14/2018==============================
+a=info('init.cfg','cfg',3)
+#with open('tmp.dat','w') as fout:
+#    for i in range(int(a.atom_type_num[0]+a.atom_type_num[1]),a.tot_num):
+#        fout.write(str(a.data[i])+'\n')
+#a.select_species([15.99909,107.8682])
+a.select_species([107.8682])
+
+
