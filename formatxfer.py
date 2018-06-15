@@ -16,7 +16,7 @@ import random as rd
 #phi(lst,n1,n2,H) #polar
 #Qlm_bar(lst,n1,nbl,l,m,H) #bond orientational order
 #get_cos(lst,i,j,k,H)
-#Class info():
+#Clas info():
 #info.get_data(self)
 #info.get_POSCAR(self)
 #info.get_xsf(self)
@@ -42,6 +42,7 @@ import random as rd
 #info.get_RDF_a_b(self) #get RDF between type A and type b
 #info.mv_center(self,i) # move atom i to the center of the cell
 #info.wrap_back_frac(self) #in fraction positions wrap atoms back to the cell
+#info.wrap_back_data(self) #wrap atoms back to the cell for self.data 
 #info.get_RDF_a_b_center(self) # totally forgot why I write this function
 #info.select_species([107.8682,15.9990]) # select specific atomic species
 #---------------end list of features---------------------
@@ -653,7 +654,9 @@ class info(object):
         #print(self.data)
         #print(self.data.shape)
         with open(a,'w') as fout:
+
             fout.write(str('Number of particles = '+str(self.tot_num)+'\n'))
+            fout.write(str('A = 1.000000 Angstrom (basic length-scale)\n'))
             fout.write(str('H0(1,1) = '+str(self.cell[0][0])+' A\n'))
             fout.write(str('H0(1,2) = '+str(self.cell[0][1])+' A\n'))
             fout.write(str('H0(1,3) = '+str(self.cell[0][2])+' A\n'))
@@ -908,16 +911,28 @@ class info(object):
     def wrap_back_frac(self):
         for i in range(self.tot_num):
             a=math.floor(self.data_frac[i][0])
-            if a > 1e-10 :
+            if a > 1e-10 or a < -1e-10:
                 self.data_frac[i][0] -= a
             b=math.floor(self.data_frac[i][1])
-            if b > 1e-10 :
+            if b > 1e-10 or b < -1e-10 :
                 self.data_frac[i][1] -= b
             c=math.floor(self.data_frac[i][2])
-            if c > 1e-10 :
+            if c > 1e-10 or c < -1e-10 :
                 self.data_frac[i][2] -= c
         return
 
+    def wrap_back_data(self):
+        for i in range(self.tot_num):
+            a=math.floor(self.data[i][1])
+            if a > 1e-10 or a < -1e-10:
+                self.data[i][1] -= a
+            b=math.floor(self.data[i][2])
+            if b > 1e-10 or b < -1e-10 :
+                self.data[i][2] -= b
+            c=math.floor(self.data[i][3])
+            if c > 1e-10 or c < -1e-10 :
+                self.data[i][3] -= c
+        return
 
     def get_RDF_a_b_center(self):
         dr=0.02
@@ -963,15 +978,47 @@ class info(object):
                 dat=np.vstack((data[0],data[i]))
                 dat=np.asarray(dat)
                 atn.append(len(data[i]))
-        #print(np.squeeze(dat).shape)
         self.data=np.squeeze(dat)
         self.tot_num=len(self.data)
         self.atom_type=len(atomic_masses)
         self.atom_type_num=atn
-        print(self.data[0][0])
-        self.get_cfg_file('new.cfg')
         return
-    def cut_box(atomic_masses,limits):
+    def shift(self,vectors):
+        self.data=self.data-np.asarray(np.hstack(([0],vectors)))
+        return
+    def cut_box(self,atomic_masses,limits):
+        self.select_species(atomic_masses)
+        self.shift([limits[0][0],limits[1][0],limits[2][0]])
+
+        a=limits[0][0]
+        b=limits[1][0]
+        c=limits[2][0]
+        limits[0][0]-=a
+        limits[0][1]-=a
+        limits[1][0]-=b
+        limits[1][1]-=b
+        limits[2][0]-=c
+        limits[2][1]-=c
+
+        self.wrap_back_data()
+        tmp=[]
+        for i in range(self.tot_num):
+            if (self.data[i][1] < limits[0][1] and \
+                self.data[i][2] < limits[1][1] and \
+                self.data[i][3] < limits[2][1] ):
+                tmp.append(self.data[i])
+        self.data=np.asarray(tmp)
+        self.tot_num=len(self.data)
+
+        xa=1.0/limits[0][1]
+        xb=1.0/limits[1][1]
+        xc=1.0/limits[2][1]
+        self.data[:,1:4]=np.multiply(self.data[:,1:4],[xa,xb,xc])
+        self.cell[0][0] *= limits[0][1]
+        self.cell[1][1] *= limits[1][1]
+        self.cell[2][2] *= limits[2][1]
+        self.get_cfg_file('new.cfg')
+
         return
 
    
@@ -1015,7 +1062,7 @@ a=info('init.cfg','cfg',3)
 #with open('tmp.dat','w') as fout:
 #    for i in range(int(a.atom_type_num[0]+a.atom_type_num[1]),a.tot_num):
 #        fout.write(str(a.data[i])+'\n')
-a.select_species([15.99909,107.8682])
+#a.select_species([15.99909,107.8682])
 #a.select_species([107.8682])
 
-
+a.cut_box([107.8682],[[0.15,0.28],[0.65,0.95],[0.56,0.75]])
