@@ -45,6 +45,7 @@ import random as rd
 #info.wrap_back_data(self) #wrap atoms back to the cell for self.data 
 #info.get_RDF_a_b_center(self) # totally forgot why I write this function
 #info.select_species([107.8682,15.9990]) # select specific atomic species
+#info.lattice_transfer(T) # where T is the transfer matrix
 #---------------end list of features---------------------
 
 def nb_lst(cell,data,tot_num,i_n,Rc):
@@ -674,9 +675,9 @@ class info(object):
             for i in range(self.entry_count-3):
                 fout.write('auxiliary[%i] =  %s  \n' % (int(i), str((i))))
             b=self.data[0][0]
-            fout.write(str(str(b)+'\nA1\n')) 
+            fout.write(str(str(b)+'\nAl\n')) 
             for i in range(self.tot_num):
-                if (self.data[i][0] != b): fout.write(str(str(self.data[i][0])+'\nA2\n'))
+                if (self.data[i][0] != b): fout.write(str(str(self.data[i][0])+'\nCr\n'))
                 for j in range(1,1+self.entry_count):
                     #fout.write(str(str(self.data[i][j])+' '))
                     fout.write('%+18.10E  '%(self.data[i][j]))
@@ -1018,9 +1019,14 @@ class info(object):
         self.cell[1][1] *= limits[1][1]
         self.cell[2][2] *= limits[2][1]
         self.get_cfg_file('new.cfg')
-
         return
 
+    def lattice_transfer(self,T):
+        self.cell=np.asarray(np.dot(T,self.cell))
+        tmp=np.dot(T,self.data[:,1:4].T)
+        self.data[:,1:4]=tmp.T
+        self.get_cfg_file('new.cfg')
+        return
    
     def __init__(self,filename,filetype,atom_type,pass_val=0):
         self.filename=str(filename)
@@ -1058,11 +1064,17 @@ class info(object):
 #        a.get_BOP(4,4)
 
 #==========add new feature 06/14/2018==============================
-a=info('init.cfg','cfg',3)
+#a=info('init.cfg','cfg',3)
 #with open('tmp.dat','w') as fout:
 #    for i in range(int(a.atom_type_num[0]+a.atom_type_num[1]),a.tot_num):
 #        fout.write(str(a.data[i])+'\n')
 #a.select_species([15.99909,107.8682])
 #a.select_species([107.8682])
 
-a.cut_box([107.8682],[[0.15,0.28],[0.65,0.95],[0.56,0.75]])
+#a.cut_box([107.8682],[[0.15,0.28],[0.65,0.95],[0.56,0.75]])
+#==========add new feature 06/20/2018==============================
+a=info('Al8Cr5_hex.cfg','cfg',2)
+T=np.asmatrix([[2/3.0, 1/3.0,-2/3.0],[-1/3.0,-2/3.0,-2/3.0],[-1/3.0,1/3.0,-2/3.0]])
+a.lattice_transfer(T)
+
+
